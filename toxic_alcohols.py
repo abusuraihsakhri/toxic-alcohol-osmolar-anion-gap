@@ -30,17 +30,18 @@ def _validate_numeric(value: float, name: str) -> float:
     return value
 
 
-def calculate_osmolal_gap(measured_osm: float, na: float, glucose: float, bun: float) -> float:
+def calculate_osmolal_gap(measured_osm: float, na: float, glucose: float, bun: float, ethanol: float = 0.0) -> float:
     """
     Calculate the osmolal gap from measured and calculated serum osmolality.
 
-    Osmolal Gap = Measured Osm - (2*Na + Glucose/18 + BUN/2.8)
+    Osmolal Gap = Measured Osm - (2*Na + Glucose/18 + BUN/2.8 + Ethanol/4.6)
 
     Args:
         measured_osm: Measured serum osmolality (mOsm/kg)
         na: Sodium concentration (mEq/L)
         glucose: Glucose concentration (mg/dL)
         bun: Blood urea nitrogen (mg/dL)
+        ethanol: Serum ethanol (mg/dL), optional; 0 for no ethanol correction
 
     Returns:
         Osmolal gap in mOsm/kg
@@ -49,8 +50,9 @@ def calculate_osmolal_gap(measured_osm: float, na: float, glucose: float, bun: f
     _validate_numeric(na, "na")
     _validate_numeric(glucose, "glucose")
     _validate_numeric(bun, "bun")
+    _validate_numeric(ethanol, "ethanol")
 
-    calculated_osm = 2.0 * na + glucose / 18.0 + bun / 2.8
+    calculated_osm = 2.0 * na + glucose / 18.0 + bun / 2.8 + ethanol / 4.6
     return round(measured_osm - calculated_osm, 2)
 
 
@@ -78,7 +80,8 @@ def calculate_anion_gap(na: float, cl: float, hco3: float) -> float:
 def calculate_metrics(**kwargs) -> Dict[str, Any]:
     """
     Core domain algorithm for toxic-alcohol-osmolar-anion-gap.
-    Validates inputs and computes a weighted composite score.
+    Validates inputs and computes a legacy, unvalidated illustrative score.
+    This score is not a toxic-alcohol diagnostic or treatment algorithm.
     """
     params = {}
     for k, v in kwargs.items():
@@ -103,7 +106,7 @@ def calculate_metrics(**kwargs) -> Dict[str, Any]:
 
     rounded_score = round(score, 2)
 
-    # Classification / tiering
+    # Legacy illustrative tiering; thresholds have not been clinically validated.
     if rounded_score < 10.0:
         tier = "Low / Standard"
         action = "Standard monitoring or negative cutoff"
@@ -118,7 +121,8 @@ def calculate_metrics(**kwargs) -> Dict[str, Any]:
         "tool": "toxic-alcohol-osmolar-anion-gap",
         "score": rounded_score,
         "classification": tier,
-        "clinical_recommendation": action,
+        "clinical_recommendation": "Illustrative score only; do not use for diagnosis or treatment.",
+        "disclaimer": "Unvalidated composite; use actual osmolal/anion gaps and clinical toxicology assessment.",
         "inputs_evaluated": len(params),
     }
 
@@ -146,7 +150,7 @@ def process_batch(input_csv: str, output_csv: str) -> None:
         fieldnames = list(reader.fieldnames or [])
         rows = list(reader)
 
-    out_fields = fieldnames + ["score", "classification", "clinical_recommendation"]
+    out_fields = list(dict.fromkeys(fieldnames + ["score", "classification", "clinical_recommendation"]))
     out_rows = []
 
     for r in rows:
