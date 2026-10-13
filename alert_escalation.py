@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Alert Escalation for Toxic Alcohol Osmolar Anion Gap
-Triggers clinical alerts when scores cross critical thresholds,
+Illustrative threshold alerts for laboratory gaps (not validated for diagnosis),
 escalates rapid score changes, and routes to specialist workflows.
 
 Author: Dr. Abu Suraih Sakhri
@@ -29,7 +29,7 @@ class Alert:
 
 
 class AlertEscalationEngine:
-    """Manages clinical alert escalation for toxic alcohol scores."""
+    """Illustrative gap-based alerts; not a treatment decision engine."""
 
     # Critical thresholds for toxic alcohol osmolar gap
     THRESHOLDS = {
@@ -76,15 +76,15 @@ class AlertEscalationEngine:
                 ts, "emergent", "threshold",
                 f"Emergent osmolal gap ({osmolal_gap:.1f} mOsm/kg) — immediate toxicology evaluation required",
                 osmolal_gap, self.THRESHOLDS["osmolal_gap_emergent"],
-                "Initiate fomepizole/ethanol protocol. Stat serum methanol/ethylene glycol levels.",
+                "Urgent toxicology assessment; obtain confirmatory levels as clinically indicated.",
                 self.ESCALATION_PATHS["emergent"],
             ))
         elif osmolal_gap >= self.THRESHOLDS["osmolal_gap_critical"]:
             new_alerts.append(self._create_alert(
                 ts, "critical", "threshold",
-                f"Critical osmolal gap ({osmolal_gap:.1f} mOsm/kg) — toxic alcohol ingestion likely",
+                f"Markedly elevated osmolal gap ({osmolal_gap:.1f} mOsm/kg) — nonspecific finding",
                 osmolal_gap, self.THRESHOLDS["osmolal_gap_critical"],
-                "Obtain stat toxic alcohol levels. Consider empiric fomepizole.",
+                "Urgent clinical assessment, evaluate alternative causes, and consider specific toxic alcohol tests.",
                 self.ESCALATION_PATHS["critical"],
             ))
         elif osmolal_gap >= self.THRESHOLDS["osmolal_gap_warning"]:
@@ -92,7 +92,7 @@ class AlertEscalationEngine:
                 ts, "warning", "threshold",
                 f"Elevated osmolal gap ({osmolal_gap:.1f} mOsm/kg) — monitor closely",
                 osmolal_gap, self.THRESHOLDS["osmolal_gap_warning"],
-                "Repeat osmolal gap in 2 hours. Obtain ethanol level and arterial pH.",
+                "Review history, ethanol level, acid-base status, and need for repeat testing.",
                 self.ESCALATION_PATHS["warning"],
             ))
 
@@ -100,9 +100,9 @@ class AlertEscalationEngine:
         if anion_gap >= self.THRESHOLDS["anion_gap_critical"]:
             new_alerts.append(self._create_alert(
                 ts, "critical", "threshold",
-                f"Critical anion gap ({anion_gap:.1f} mEq/L) — severe metabolic acidosis",
+                f"Markedly elevated anion gap ({anion_gap:.1f} mEq/L) — evaluate acid-base status",
                 anion_gap, self.THRESHOLDS["anion_gap_critical"],
-                "Urgent ABG. Evaluate for toxic alcohol, DKA, sepsis. Consider bicarbonate drip.",
+                "Urgent clinical evaluation for metabolic acidosis and its differential diagnosis.",
                 self.ESCALATION_PATHS["critical"],
             ))
         elif anion_gap >= self.THRESHOLDS["anion_gap_warning"]:
@@ -110,7 +110,7 @@ class AlertEscalationEngine:
                 ts, "warning", "threshold",
                 f"Elevated anion gap ({anion_gap:.1f} mEq/L)",
                 anion_gap, self.THRESHOLDS["anion_gap_warning"],
-                "Check lactate, ketones, renal function. Repeat in 4 hours.",
+                "Review lactate, ketones, renal function, and laboratory context.",
                 self.ESCALATION_PATHS["warning"],
             ))
 
@@ -120,7 +120,7 @@ class AlertEscalationEngine:
                 ts, "emergent", "threshold",
                 f"Emergent combined toxic alcohol score ({combined_score:.1f})",
                 combined_score, self.THRESHOLDS["combined_score_emergent"],
-                "Activate toxicology emergency protocol. Prepare for hemodialysis evaluation.",
+                "Do not use this unvalidated composite to initiate treatment; seek specialist assessment.",
                 self.ESCALATION_PATHS["emergent"],
             ))
         elif combined_score >= self.THRESHOLDS["combined_score_critical"]:
@@ -128,7 +128,7 @@ class AlertEscalationEngine:
                 ts, "critical", "threshold",
                 f"Critical combined toxic alcohol score ({combined_score:.1f})",
                 combined_score, self.THRESHOLDS["combined_score_critical"],
-                "Toxicology consult. Serial monitoring q2h. Nephrology notification.",
+                "Do not use this unvalidated composite to guide care; assess clinically.",
                 self.ESCALATION_PATHS["critical"],
             ))
 
