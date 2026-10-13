@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Patient Stratification for Toxic Alcohol Osmolar Anion Gap
-Stratifies patients into score-based risk tiers for protocol-driven management.
+Exploratory scoring module. Tiers are not validated diagnostic or treatment criteria.
 
 Author: Dr. Abu Suraih Sakhri
 License: MIT
@@ -31,9 +31,9 @@ RISK_TIERS = [
         tier_id="tier_0",
         name="Minimal Risk",
         score_range=(0, 10),
-        description="Normal or near-normal osmolal and anion gap. Low suspicion for toxic alcohol ingestion.",
-        monitoring_frequency="Routine monitoring q8h",
-        interventions=["Repeat labs in 8-12 hours", "Standard metabolic panel"],
+        description="Normal or near-normal osmolal and anion gap. Gaps alone cannot exclude toxic alcohol ingestion.",
+        monitoring_frequency="Determine clinically",
+        interventions=["Review clinical history and relevant testing"],
         specialist_referral=False,
         clinical_pathway="standard_observation",
         trial_eligibility="not_eligible",
@@ -43,12 +43,12 @@ RISK_TIERS = [
         name="Low-Moderate Risk",
         score_range=(10, 20),
         description="Mildly elevated gaps. Possible early ingestion or alternative etiology.",
-        monitoring_frequency="Monitoring q4h",
+        monitoring_frequency="Determine clinically",
         interventions=[
-            "Serial osmolal gap measurements q4h",
+            "Consider serial laboratory assessment if clinically indicated",
             "Arterial blood gas",
             "Serum ethanol level",
-            "Urine fluorescence under Wood's lamp",
+            "Specific toxic alcohol assays when indicated",
         ],
         specialist_referral=False,
         clinical_pathway="enhanced_observation",
@@ -58,14 +58,14 @@ RISK_TIERS = [
         tier_id="tier_2",
         name="Moderate-High Risk",
         score_range=(20, 35),
-        description="Significantly elevated gaps. High suspicion for toxic alcohol ingestion.",
-        monitoring_frequency="Monitoring q2h",
+        description="Elevated composite score; not a validated probability of poisoning.",
+        monitoring_frequency="Determine clinically",
         interventions=[
             "Stat toxic alcohol levels (methanol, ethylene glycol, isopropanol)",
-            "Empiric fomepizole 15 mg/kg IV loading dose",
+            "Discuss antidotal therapy with a toxicologist based on full clinical context",
             "Nephrology consultation for hemodialysis evaluation",
-            "IV sodium bicarbonate for pH < 7.30",
-            "Folic acid 50 mg IV q4h (methanol) or thiamine/pyridoxine (ethylene glycol)",
+            "Assess acid-base status with appropriate specialist oversight",
+            "Refer to current toxicology guidance for adjuncts",
         ],
         specialist_referral=True,
         clinical_pathway="toxicology_consult",
@@ -75,15 +75,15 @@ RISK_TIERS = [
         tier_id="tier_3",
         name="High Risk / Emergent",
         score_range=(35, 100),
-        description="Severely elevated gaps. Confirmed or highly probable toxic alcohol ingestion with end-organ threat.",
-        monitoring_frequency="Continuous monitoring + q1h labs",
+        description="High illustrative composite score; poisoning is neither confirmed nor excluded.",
+        monitoring_frequency="Determine clinically",
         interventions=[
-            "Immediate fomepizole initiation",
-            "Emergent hemodialysis evaluation (methanol > 50 mg/dL, EG > 20 mg/dL, pH < 7.15, visual/renal injury)",
-            "ICU admission",
-            "Central venous access and arterial line",
+            "Urgent expert toxicology assessment",
+            "Refer to current poison-specific extracorporeal treatment guidance",
+            "Assess level of care based on clinical findings",
+            "Supportive management based on clinical indications",
             "Ophthalmology consult (methanol) / Nephrology (ethylene glycol)",
-            "Consider ethanol drip if fomepizole unavailable",
+            "Seek specialist guidance on antidotal options",
         ],
         specialist_referral=True,
         clinical_pathway="emergent_toxicology",
@@ -93,7 +93,7 @@ RISK_TIERS = [
 
 
 class PatientStratifier:
-    """Stratifies patients into risk tiers based on toxic alcohol scores."""
+    """Reports legacy illustrative tiers; never substitute for clinical assessment."""
 
     def __init__(self, tiers: Optional[List[RiskTier]] = None):
         self.tiers = tiers or RISK_TIERS
@@ -138,6 +138,7 @@ class PatientStratifier:
             "clinical_modifiers": modifiers,
             "adjusted_risk": self._adjust_risk(matched_tier, modifiers),
             "protocol_recommendation": self._generate_protocol(matched_tier, modifiers),
+            "disclaimer": "Unvalidated illustrative categories, not treatment or trial eligibility criteria.",
         }
 
     def _apply_clinical_modifiers(self, factors: Dict[str, Any]) -> List[Dict[str, str]]:
