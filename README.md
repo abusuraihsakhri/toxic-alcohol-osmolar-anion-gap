@@ -1,227 +1,73 @@
-# Toxic Alcohol Osmolar Anion Gap
+# Toxic Alcohol Osmolal & Anion Gap Calculator
 
-> **Domain:** Clinical Decision Support & Biomedical Computing
-> **Reference Guidelines & Standards:** `Standard Clinical Formulations & ISO/IEC Quality Frameworks`
+A static browser calculator and Python utilities for estimating the **serum osmolal gap** and **anion gap** from laboratory measurements. The browser calculator runs locally without an API or Python runtime.
 
-<div align="center">
+**Important:** This is an educational/research calculation aid, **not** a diagnostic, risk-classification, or treatment system. A normal osmolal gap **does not rule out** methanol or ethylene glycol poisoning, and elevated gaps are not specific. Seek urgent toxicology assessment when exposure is suspected. Use your laboratory's formula and reference interval.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+## Browser calculator
 
-</div>
+Open [web/index.html](web/index.html) in a modern browser, or serve the directory with `python -m http.server --directory web`. Enter measured osmolality (mOsm/kg), sodium (mEq/L), glucose and BUN (mg/dL), and optionally ethanol (mg/dL), chloride and bicarbonate (mEq/L). The app calculates the gaps and can export numeric results to CSV.
 
----
+No patient identifiers, logins, cookies, remote services, or persistent storage are used by this browser calculator. Do not enter protected health information. It works without a Python server, including when hosted from a static HTTPS site.
 
-## 📖 What It Does
+## Equations
 
-Clinical decision support system for toxic alcohol poisoning assessment. Calculates osmolar and anion gaps, stratifies patients into risk tiers, triggers clinical alerts when scores cross critical thresholds, and tracks patient trajectories over time.
+- Calculated osmolarity ≈ `2 × Na + glucose/18 + BUN/2.8 + ethanol/4.6`, using mg/dL for glucose, BUN and ethanol. The ethanol term is included **only when supplied**.
+- Osmolal gap = measured serum osmolality − calculated osmolarity.
+- Anion gap = `Na − (Cl + HCO3)` (potassium excluded; albumin not corrected).
 
-Author: Dr. Abu Suraih Sakhri
-License: MIT
+The equations use conventional clinical unit approximations. Measured osmolality and calculated osmolarity are not identical physical quantities; laboratories may apply different equations. A result cannot identify a particular toxic alcohol or determine its serum concentration reliably.
 
----
+## Python installation and examples
 
-## ⚙️ Key Capabilities & Algorithmic Modules
+Requires Python 3.10+.
 
-### 🔬 Core Algorithmic & Evaluation Engines
-
-- **`calculate_metrics()`**: Core scoring algorithm with input validation
-- **`calculate_osmolal_gap()`**: Computes osmolal gap from measured osmolality, sodium, glucose, and BUN
-- **`calculate_anion_gap()`**: Computes anion gap from sodium, chloride, and bicarbonate
-- **`AlertEscalationEngine`**: Manages clinical alert escalation for toxic alcohol scores
-- **`LongitudinalTracker`**: Tracks toxic alcohol osmolar anion gap scores over time
-- **`PatientStratifier`**: Stratifies patients into score-based risk tiers
-- **`PHIGuard`**: Zero-PHI outbound interceptor blocking sensitive identifiers
-- **`AuditTrail`**: Tamper-evident HMAC-SHA256 audit logging
-
----
-
-## 📐 Mathematical Formulation & Logic
-
-### Osmolal Gap Calculation
-```
-Osmolal Gap = Measured Osm - (2 × Na + Glucose/18 + BUN/2.8)
-```
-
-### Anion Gap Calculation
-```
-Anion Gap = Na - (Cl + HCO3)
-```
-
-### Combined Score
-```
-combined_score = osmolal_gap + anion_gap × 0.5
-if serum_osmolality > 320:
-    combined_score += (serum_osmolality - 320) × 0.1
-```
-
-### Risk Tier Classification
-| Score Range | Tier | Action |
-|:------------|:-----|:-------|
-| < 10 | Low / Standard | Standard monitoring |
-| 10 - 25 | Moderate / Intermediate | Close observation |
-| > 25 | High / Severe | Urgent clinical intervention |
-
----
-
-## 💻 Installation
-
-### Local Development
 ```bash
-# Clone the repository
 git clone https://github.com/abusuraihsakhri/toxic-alcohol-osmolar-anion-gap.git
 cd toxic-alcohol-osmolar-anion-gap
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# For development (includes pytest)
-pip install -r requirements-dev.txt
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+python -m pytest -q
+node --test web/calculator.test.cjs  # Node.js 18+ optional
 ```
 
-### Environment Configuration
-```bash
-# Copy the example environment file
-cp .env.example .env
+Use the explicit numerical functions rather than the legacy composite score:
 
-# Edit .env and set your secure values
-# Generate a secure key: python -c "import secrets; print(secrets.token_hex(32))"
+```python
+from toxic_alcohols import calculate_osmolal_gap, calculate_anion_gap
+
+osmolal_gap = calculate_osmolal_gap(320, 140, 100, 15, ethanol=46)  # 19.09
+anion_gap = calculate_anion_gap(140, 104, 24)  # 12.0
 ```
 
----
+The command-line entry point `toxic-alcohol` exposes the existing illustrative supervisor/audit workflows:
 
-## 💻 CLI Quickstart & Usage
-
-### 1. Single Case Evaluation
 ```bash
-python toxic_alcohols.py single --v1 14.5 --v2 4.2 --v3 1.8
-```
-
-### 2. Batch CSV Processing
-```bash
-python toxic_alcohols.py batch -i sample.csv -o results.csv
-```
-
-### 3. Supervisor Audit Mode
-```bash
-python cli.py audit --task-id TASK-001 --primary 28.5 --secondary 14.2
-```
-
-### 4. Verify Audit Trail Integrity
-```bash
-python cli.py verify-audit
-```
-
-### 5. Launch REST API Server
-```bash
+toxic-alcohol audit --task-id DEMO-01 --primary 15 --secondary 4
+toxic-alcohol verify-audit
 python cli.py serve --host 127.0.0.1 --port 8000
 ```
 
-### Input Data Schema
+The separate `toxic_alcohols.py single` and `batch` commands and `PatientStratifier` / `AlertEscalationEngine` expose **legacy, unvalidated** composite scores or threshold categories. Their labels, trial-eligibility flags and trend outputs must not be used for patient care or clinical enrollment decisions.
 
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `Patient_ID` | Patient identifier | Required |
-| `v1` | Primary parameter (e.g., osmolal gap) | Required |
-| `v2` | Secondary parameter (e.g., anion gap) | Required |
-| `v3` | Tertiary parameter | Optional |
+## Backend and data protection
 
----
+The optional FastAPI backend (`agents/api.py`) offers `/health`, `/metrics`, `/api/audit`, `/api/chat` and `/api/audit/logs`. The backend runs a deterministic mock, **not** a configured remote language model. Supervisor thresholds are illustrative rather than clinically validated.
 
-## 🛡️ Security & Enterprise Architecture
+The backend's identifier filter uses regular expressions and **cannot guarantee PHI detection or HIPAA compliance**. Do not send real identifiable patient data to the API, CLI examples or logs. The audit log is an in-memory, HMAC-chained record; it is not durable storage. Set a strong `AUDIT_SECRET_KEY` for repeatable server-side signatures, and secure your own deployment. The Docker Compose configuration requires this secret to be supplied explicitly.
 
-* **Zero-PHI Outbound Interceptor:** Active regex inspection blocking SSNs, MRNs, phone numbers, emails, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Input Validation:** All numeric inputs validated for finite, non-negative values.
-* **Secure Defaults:** Audit secret key auto-generated if not provided via environment variable.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
+## Tests and deployment
 
----
+- Python tests: `python -m pytest -q`
+- Browser arithmetic tests: `node --test web/calculator.test.cjs`
+- Syntax: `node --check web/calculator.js`
+- GitHub Actions: cross-version Python tests, browser tests, and a static Pages deployment workflow for the `web/` directory.
 
-## 🧪 Testing & Verification
+GitHub Pages deployment requires Pages to be enabled in repository settings with **GitHub Actions** as the source. The browser code has no server-side Python requirements; using Pyodide would add unnecessary loading cost.
 
-Run the automated test suite:
+## Technology, compatibility, license
 
-```bash
-pytest -v
-```
+Python 3.10+; FastAPI / Pydantic 2 for the optional API; dependency-free HTML, CSS and JavaScript for the static site. The browser app targets current Chromium, Firefox and Safari, with JavaScript enabled. [MIT license](LICENSE).
 
-Run with coverage:
-
-```bash
-pytest -v --cov --cov-report=html
-```
-
-Execute high-throughput batch simulation benchmarks:
-
-```bash
-python simulator.py 1000
-```
-
----
-
-## 🐳 Container Deployment
-
-### Docker
-```bash
-docker build -t toxic-alcohol-osmolar-anion-gap .
-docker run -p 8000:8000 --env-file .env toxic-alcohol-osmolar-anion-gap
-```
-
-### Docker Compose
-```bash
-# Set your environment variables
-export AUDIT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
-
-docker-compose up -d
-```
-
----
-
-## 📁 Project Structure
-
-```
-toxic-alcohol-osmolar-anion-gap/
-├── agents/                  # Enterprise agent framework
-│   ├── __init__.py
-│   ├── api.py              # FastAPI REST endpoints
-│   ├── base.py             # Security, PHI guard, audit trail
-│   ├── models.py           # Pydantic data models
-│   ├── supervisor.py       # Multi-agent orchestrator
-│   ├── workers.py          # Specialized evaluation workers
-│   ├── llm_factory.py      # LLM provider abstraction
-│   ├── learning.py         # Bayesian calibration engine
-│   ├── metrics.py          # Prometheus metrics collector
-│   └── streamer.py         # WebSocket telemetry broadcaster
-├── tests/                  # Test suite
-│   ├── test_toxic_alcohol_osmolar_anion_gap.py
-│   └── test_enrichment.py
-├── web/                    # Operations console (HTML)
-├── toxic_alcohols.py       # Core algorithm & CLI
-├── alert_escalation.py     # Clinical alert escalation
-├── longitudinal_tracker.py # Longitudinal score tracking
-├── patient_stratification.py # Risk tier stratification
-├── enrichment.py           # Enrichment feature engines
-├── cli.py                  # Command-line interface
-├── simulator.py            # High-throughput simulator
-├── pyproject.toml          # Python project metadata
-├── requirements.txt        # Runtime dependencies
-├── requirements-dev.txt    # Development dependencies
-├── Dockerfile              # Container build
-├── docker-compose.yml      # Container orchestration
-└── .github/workflows/      # CI/CD pipeline
-```
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
+Clinical background: [EXTRIP ethylene glycol guidance](https://pmc.ncbi.nlm.nih.gov/articles/PMC9921105/) and [limitations of toxic alcohol testing](https://pubmed.ncbi.nlm.nih.gov/26114345/).
